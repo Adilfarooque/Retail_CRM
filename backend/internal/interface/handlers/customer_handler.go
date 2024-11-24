@@ -97,4 +97,6 @@ func (h *CustomerHandler) DeleteCustomer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer"})
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
