@@ -45,3 +45,18 @@ func (cu *CustomerHandler) GetCustomers(c *gin.Context) {
 		"limit":     limit,
 	})
 }
+
+// Create new customer
+func (cu *CustomerHandler) CreateCustomer(c *gin.Context) {
+	var customer models.Customer
+	if err := c.ShouldBindJSON(&customer); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := cu.db.Create(&customer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create customer"})
+		return
+	}
+	c.JSON(http.StatusCreated, customer)
+}
