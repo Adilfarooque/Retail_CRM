@@ -20,13 +20,13 @@ func NewCustomerHandeler(db *gorm.DB) *CustomerHandler {
 }
 
 // Get Customers retrives all customers with pagination
-func (cu *CustomerHandler) GetCustomers(c *gin.Context) {
+func (h *CustomerHandler) GetCustomers(c *gin.Context) {
 	var customers []models.Customer
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset := (page - 1) * limit
 
-	result := cu.db.Offset(offset).Limit(limit).Find(&customers)
+	result := h.db.Offset(offset).Limit(limit).Find(&customers)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to fetch customers",
@@ -36,7 +36,7 @@ func (cu *CustomerHandler) GetCustomers(c *gin.Context) {
 
 	//Count of the pagination
 	var total int64
-	cu.db.Model(&models.Customer{}).Count(&total)
+	h.db.Model(&models.Customer{}).Count(&total)
 
 	c.JSON(http.StatusOK, gin.H{
 		"customers": customers,
@@ -47,16 +47,54 @@ func (cu *CustomerHandler) GetCustomers(c *gin.Context) {
 }
 
 // Create new customer
-func (cu *CustomerHandler) CreateCustomer(c *gin.Context) {
+func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 	var customer models.Customer
 	if err := c.ShouldBindJSON(&customer); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := cu.db.Create(&customer).Error; err != nil {
+	if err := h.db.Create(&customer).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create customer"})
 		return
 	}
 	c.JSON(http.StatusCreated, customer)
+}
+
+// Update existing customer
+func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
+	id := c.Param("id")
+	var customer models.Customer
+
+	if err := h.db.First(&customer, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&customer); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.db.Save(&customer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update customer"})
+		return
+	}
+
+	c.JSON(http.StatusOK, customer)
+}
+
+func (h *CustomerHandler) DeleteCustomer(c *gin.Context) {
+	id := c.Param("id")
+	var customer models.Customer
+
+	if err := h.db.First(&customer, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		return
+	}
+
+	if err := h.db.Delete(&customer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer"})
+		return
+	}
 }
